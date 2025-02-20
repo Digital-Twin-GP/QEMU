@@ -26,6 +26,9 @@ class Vehicle:
     
     def get_fuel(self):
         return self.data.iloc[self.time_index]["Fuel CMEM (mg)"]
+    
+    def get_distance(self):
+        return self.data.iloc[self.time_index]["Distance (m)"]
 
     def get_braking(self):
         return self.data.iloc[self.time_index]["Braking"]
@@ -53,7 +56,7 @@ def calculate_fuel_rate(parameters, P, N=35, V=3.6):
 def read_config_file():
     # Load configuration from INI file
     config = configparser.ConfigParser()
-    config.read("./MPC/config.ini")
+    config.read("./config.ini")
 
     # Convert the section into a dictionary
     parameters = {key: float(value) for key, value in config["simulation_parameters"].items()}
@@ -61,7 +64,7 @@ def read_config_file():
 
 def save_graph(time_values, original_throttle_values, predicted_throttle_values, filename="fuel_comparison.png"):
     # Create the outputs folder if it doesn't exist
-    output_directory = "./MPC/outputs"
+    output_directory = "./outputs"
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
         print(f"Created directory: {output_directory}")
@@ -86,11 +89,25 @@ def save_graph(time_values, original_throttle_values, predicted_throttle_values,
 
 def save_graph_separated(time_values, original_throttle_values, predicted_throttle_values, filename="fuel_comparison.png"):
     # Create the outputs folder if it doesn't exist
-    output_directory = "./MPC/outputs"
+    output_directory = "./outputs"
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
         print(f"Created directory: {output_directory}")
-    
+
+    num_points = 500
+    total_data = len(time_values)
+
+    if total_data > num_points:
+        mid_idx = total_data // 2  # Find the middle index
+        half_range = num_points // 2  # Half of the required points
+
+        start_idx = max(0, mid_idx - half_range)
+        end_idx = min(total_data, mid_idx + half_range)
+
+        time_values = np.array(time_values)[start_idx:end_idx]
+        original_throttle_values = np.array(original_throttle_values)[start_idx:end_idx]
+        predicted_throttle_values = np.array(predicted_throttle_values)[start_idx:end_idx]
+
     # Create a figure with two subplots (stacked vertically)
     fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
 
@@ -120,7 +137,7 @@ def save_graph_separated(time_values, original_throttle_values, predicted_thrott
 
 def save_predicted_throttle_to_csv(time_values, predicted_throttle_values, filename="predicted_fuel.csv"):
     # Create the outputs folder if it doesn't exist
-    output_directory = "./MPC/outputs"
+    output_directory = "./outputs"
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
         print(f"Created directory: {output_directory}")
