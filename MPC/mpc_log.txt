@@ -1,0 +1,6 @@
+t: 0.00, dist: 1047.29, fuel: -4.29, acc: 521.64
+t: 0.00, dist: 1047.29, fuel: -4.29, acc: 521.64
+t: 0.00, dist: 1049.21, fuel: 44.72, acc: 19980.01
+t: 0.00, dist: 1047.56, fuel: 2.35, acc: 0.02
+t: 0.00, dist: 1047.56, fuel: 2.35, acc: 0.02
+Time: 1.00, Best Fuel Consumption: 2.35, Predicted Acceleration: -0.00

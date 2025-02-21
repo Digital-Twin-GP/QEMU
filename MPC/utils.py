@@ -2,11 +2,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import configparser
 import os
+import numpy as np
+import math
 
 class Vehicle:
     def __init__(self, excel_file):
         # Load the Excel file into a DataFrame
-        self.data = pd.read_excel(excel_file)
+        self.data = pd.read_csv(excel_file)
         self.time_index = 0  # Start at the first row
 
     def update(self):
@@ -22,6 +24,12 @@ class Vehicle:
 
     def get_throttle(self):
         return self.data.iloc[self.time_index]["Throttle"]
+    
+    def get_fuel(self):
+        return self.data.iloc[self.time_index]["Fuel CMEM (mg)"]
+    
+    def get_distance(self):
+        return self.data.iloc[self.time_index]["Distance (m)"]
 
     def get_braking(self):
         return self.data.iloc[self.time_index]["Braking"]
@@ -30,14 +38,21 @@ class Vehicle:
         return self.data.iloc[self.time_index]["Steering"]
 
     def get_time(self):
-        return self.data.iloc[self.time_index]["Time"]
+        return self.data.iloc[self.time_index]["Step"]
 
-def calculate_forces(velocity, acceleration, parameters):
+def calculate_power(velocity, acceleration, parameters):
     F_mass = acceleration * parameters["mass"]
-    F_rolling = 0.01 * parameters["mass"] * parameters["g"]
-    F_air = 0.5 * parameters["air_density"] * parameters["frontal_area"] * parameters["drag_coefficient"] *velocity**2
+    F_rolling = parameters["rolling_coefficient"] * parameters["mass"] * parameters["g"]
+    F_air = 0.5 * parameters["air_density"] * parameters["frontal_area"] * parameters["drag_coefficient"] * (velocity**2)
     F_total = F_mass + F_rolling + F_air
-    return F_total    
+    return (F_total * velocity) / 1000 
+
+def calculate_fuel_rate(parameters, P, N=0.035, V=3.6):
+    """ CMEM fuel rate calculation """
+    N0 = 30 * math.sqrt(3.0 / V)
+    K = parameters["k"] * (1 + parameters["c"] * (N - N0))
+    FR = (K * N * V + (P / parameters["eta"])) * (1 / parameters["lhv"]) * (1 + parameters["b"] * ((N - N0)**2))  # g/s
+    return FR * 1000 * parameters["time_step"]  # mg per time step     
 
 def read_config_file():
     # Load configuration from INI file
@@ -48,20 +63,20 @@ def read_config_file():
     parameters = {key: float(value) for key, value in config["simulation_parameters"].items()}
     return parameters
 
-def save_graph(time_values, original_throttle_values, predicted_throttle_values, filename="throttle_comparison.png"):
+def save_graph(time_values, original_throttle_values, predicted_throttle_values, filename="fuel_comparison.png"):
     # Create the outputs folder if it doesn't exist
-    output_directory = "./MPC/outputs"
+    output_directory = "./outputs"
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
         print(f"Created directory: {output_directory}")
     
     # Plotting the curves
     plt.figure(figsize=(10, 6))
-    plt.plot(time_values, predicted_throttle_values, label="Predicted Throttle", color="blue")
-    plt.plot(time_values, original_throttle_values, label="Original Throttle", color="orange", linestyle="--")
+    plt.plot(time_values, predicted_throttle_values, label="Predicted Fuel", color="blue")
+    plt.plot(time_values, original_throttle_values, label="Original Fuel", color="orange", linestyle="--")
     plt.xlabel("Time (s)")
-    plt.ylabel("Throttle")
-    plt.title("Predicted Throttle vs Original Throttle")
+    plt.ylabel("Fuel")
+    plt.title("Predicted Fuel vs Original Fuel")
     plt.legend()
     plt.grid(True)
 
@@ -73,8 +88,55 @@ def save_graph(time_values, original_throttle_values, predicted_throttle_values,
     print(f"Graph saved as: {save_path}")
     return
 
+def save_graph_separated(time_values, original_throttle_values, predicted_throttle_values, filename="fuel_comparison.png"):
+    # Create the outputs folder if it doesn't exist
+    output_directory = "./MPC/outputs"
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+        print(f"Created directory: {output_directory}")
 
-def save_predicted_throttle_to_excel(time_values, predicted_throttle_values, filename="predicted_throttle.xlsx"):
+    num_points = 500
+    total_data = len(time_values)
+
+    if total_data > num_points:
+        mid_idx = total_data // 2  # Find the middle index
+        half_range = num_points // 2  # Half of the required points
+
+        start_idx = max(0, mid_idx - half_range)
+        end_idx = min(total_data, mid_idx + half_range)
+
+        time_values = np.array(time_values)[start_idx:end_idx]
+        original_throttle_values = np.array(original_throttle_values)[start_idx:end_idx]
+        predicted_throttle_values = np.array(predicted_throttle_values)[start_idx:end_idx]
+
+    # Create a figure with two subplots (stacked vertically)
+    fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+
+    # Plot predicted fuel
+    axes[0].plot(time_values, predicted_throttle_values, label="Predicted Fuel", color="blue")
+    axes[0].set_ylabel("Predicted Fuel")
+    axes[0].set_title("Predicted Fuel over Time")
+    axes[0].grid(True)
+    axes[0].legend()
+
+    # Plot original fuel
+    axes[1].plot(time_values, original_throttle_values, label="Original Fuel", color="orange", linestyle="--")
+    axes[1].set_xlabel("Time (s)")
+    axes[1].set_ylabel("Original Fuel")
+    axes[1].set_title("Original Fuel over Time")
+    axes[1].grid(True)
+    axes[1].legend()
+
+    # Adjust layout and save the plot
+    plt.tight_layout()
+    save_path = os.path.join(output_directory, filename)
+    plt.savefig(save_path, dpi=300)  # Save with high resolution (300 DPI)
+    plt.close()  # Close the figure to free memory
+
+    print(f"Graph saved as: {save_path}")
+
+
+def save_predicted_throttle_to_csv(time_values, predicted_throttle_values, filename="predicted_fuel.csv"):
     # Create the outputs folder if it doesn't exist
     output_directory = "./MPC/outputs"
     if not os.path.exists(output_directory):
@@ -84,14 +146,14 @@ def save_predicted_throttle_to_excel(time_values, predicted_throttle_values, fil
     # Create a DataFrame with the time and throttle values
     data = {
         "Time (s)": time_values,
-        "Predicted Throttle": predicted_throttle_values,
+        "Predicted Fuel": predicted_throttle_values,
     }
     
     df = pd.DataFrame(data)
 
     # Save the DataFrame to an Excel file in the outputs directory
     save_path = os.path.join(output_directory, filename)
-    df.to_excel(save_path, index=False)
+    df.to_csv(save_path, index=False)
 
-    print(f"Predicted throttle values saved to: {save_path}")
+    print(f"Predicted Fuel values saved to: {save_path}")
     return
