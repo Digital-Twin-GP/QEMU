@@ -29,15 +29,15 @@ def knnTrain():
     y_pred_train = clf.predict(X_train)
     # Evaluate the model on training data
     mse_train = np.mean((y_pred_train - Y_train) ** 2)
-    print(f"Train Data Mean Squared Error: {mse_train:.4f}\n")
+    print(f"Train Data Mean Squared Error: {mse_train:.4f}")
 
     # Predict on the test data
     y_pred_test = model.predict(X_testValid)
     # Evaluate the model on test data
     mse_test = np.mean((y_pred_test - Y_testValid) ** 2)
-    print(f"Test Data Mean Squared Error: {mse_test:.4f}\n")
+    print(f"Test Data Mean Squared Error: {mse_test:.4f}")
 
-    print("_________________________Training is completed_________________________")
+    print("_________________________KNN Training is completed_________________________\n\n")
 
 def knnPredict(x_test):
     # Load the trained model

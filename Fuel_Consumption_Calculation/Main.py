@@ -33,8 +33,8 @@ def predict():
 def main(type):
     if type == 1: #Train Models
         train()
-    if type == 2: #Predict
-        file_path = "./Data/test_data.csv"
+    elif type == 2: #Predict models to compare predictions
+        file_path = "./Fuel_Consumption_Calculation/test_data.csv"
         df = pd.read_csv(file_path)
         randomForestPrediction,SVRPrediction,linearRegressionPrediction,KNNPrediction = predict()
         df["Random Forest"] = randomForestPrediction
@@ -42,7 +42,5 @@ def main(type):
         df["Linear Regression"] = linearRegressionPrediction
         df["KNN"] = KNNPrediction
         df.to_csv(file_path, index=False)
-
-
 
 main(2)

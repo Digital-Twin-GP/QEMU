@@ -15,7 +15,7 @@ def preprocessTrainSet():
         df = df.dropna()  # Remove rows with missing values
 
     # Define input (X) and output (y)
-    X = df[["Fuel CMEM (mg)"]].values  # Input feature
+    X = df[["Speed (m/s)","Acceleration (m/s^2)"]].values  # Input features
     y = df["Fuel HBEFA (mg)"].values   # Target variable
 
     # Split data into training and testing sets
@@ -32,7 +32,7 @@ def preprocessTrainSet():
 
 def preprocessTestSet():
     # Load dataset
-    file_path = "./Data/test_data.csv"
+    file_path = "./Fuel_Consumption_Calculation/test_data.csv"
     df = pd.read_csv(file_path)
 
     # Drop unnecessary columns
@@ -43,7 +43,7 @@ def preprocessTestSet():
         df = df.dropna()  # Remove rows with missing values
 
     # Define input (X) and output (y)
-    X = df[["Fuel CMEM (mg)"]].values  # Input feature
+    X = df[["Speed (m/s)","Acceleration (m/s^2)"]].values  # Input features
 
     # Print dataset shapes
     print("X_test shape:", X.shape)
