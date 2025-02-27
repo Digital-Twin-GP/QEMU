@@ -8,7 +8,7 @@ import random
 import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from Preprocess import preprocessTrainSet
+from preprocess import preprocessTrainSet
 
 def randomForestTrain():
     # Preprocess the data to get training and testing data

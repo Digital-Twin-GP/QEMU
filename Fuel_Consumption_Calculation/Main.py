@@ -2,14 +2,14 @@ from Models.Random_Forest import *
 from Models.SVR import *
 from Models.Linear_Regression import *
 from Models.KNN import *
-from Preprocess import preprocessTestSet
+from preprocess import preprocessTestSet
 import pandas as pd
 
 def train():
     randomForestTrain()
-    svrTrain()
-    linearRegressionTrain()
-    knnTrain()
+    # svrTrain()
+    # linearRegressionTrain()
+    # knnTrain()
 
 
 def predict():
@@ -43,4 +43,4 @@ def main(type):
         df["KNN"] = KNNPrediction
         df.to_csv(file_path, index=False)
 
-main(2)
+main(1)

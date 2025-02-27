@@ -7,7 +7,7 @@ import pickle
 import numpy as np
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from Preprocess import preprocessTrainSet
+from preprocess import preprocessTrainSet
 
 def knnTrain():
     # Preprocess the data to get training and testing data
