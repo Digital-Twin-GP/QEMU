@@ -29,21 +29,31 @@ class MPCController:
 
     def objective(self, control_vars, init_state):
         cost = 0
-        speed_t, acc_t, distance_t, MAX_ROAD_SPEED = init_state[0], init_state[1], init_state[2], init_state[3]
+        speed_t, acc_t, distance_t, max_road_speed_t, tls_distance_t, tls_state_t = init_state[0], init_state[1], init_state[2], init_state[3],init_state[4], init_state[5]
 
         for i in range(self.steps_ahead):
             fuel_cost = calculate_fuel(speed_t, acc_t, self.fuel_parameters, self.dt)
 
-            if distance_t == -1:
-                speed_ref = MAX_ROAD_SPEED
+            if distance_t == -1 or distance_t >self.MAX_SAFE_DISTANCE:
+                vehicle_speed_ref = max_road_speed_t
             else:
-                # Ensure the distance stays within a reasonable range
-                distance_clamped = max(self.MIN_SAFE_DISTANCE, min(distance_t, self.MAX_SAFE_DISTANCE))
+                # # Ensure the distance stays within a reasonable range
+                # distance_clamped = max(self.MIN_SAFE_DISTANCE, min(distance_t, self.MAX_SAFE_DISTANCE))
                 # Map distance to speed using a linear equation
-                speed_ref = MAX_ROAD_SPEED * (distance_clamped - self.MIN_SAFE_DISTANCE) / (self.MAX_SAFE_DISTANCE - self.MIN_SAFE_DISTANCE)
+                vehicle_speed_ref = max_road_speed_t * (distance_t - self.MIN_SAFE_DISTANCE) / (self.MAX_SAFE_DISTANCE - self.MIN_SAFE_DISTANCE)
+                vehicle_speed_ref = max(vehicle_speed_ref,0)
+
+            # if tls_distance_t == -1 or tls_distance_t >self.MAX_SAFE_DISTANCE:
+            if (tls_state_t == 'G' and tls_distance_t != -1):
+                tls_speed_ref = init_state[0] + 1 
+            elif (tls_state_t == 'r' or tls_state_t == 'y'):
+                tls_speed_ref = max_road_speed_t * (tls_distance_t / self.MAX_SAFE_DISTANCE)
+                tls_speed_ref = max(tls_speed_ref,0)   
+            else:
+                tls_speed_ref = max_road_speed_t     
 
             #check init_state[1] or control_vars[i-1] 
-            cost += self.Q_v * (speed_ref - speed_t)**2  + self.Q_a * (control_vars[i] - init_state[1])**2 + self.Q_fuel * fuel_cost # + Q_a * acc_t**2
+            cost += self.Q_v * (min(vehicle_speed_ref,tls_speed_ref) - speed_t)**2  + self.Q_a * (control_vars[i] - init_state[1])**2 + self.Q_fuel * fuel_cost # + Q_a * acc_t**2
 
             acc_t = control_vars[i]
             if(distance_t != -1):
@@ -54,13 +64,13 @@ class MPCController:
 
 
 
-    def control(self, vehicle):
+    def control(self, speed,acceleration,distance,max_speed,tls_distance,tls_state):
         # Initial state (speed, acceleration,distance) from the Vehicle class
-        init_state = (vehicle.get_speed(), vehicle.get_acceleration(),vehicle.get_distance(), vehicle.get_max_speed())
+        init_state = (speed, acceleration,distance, max_speed,tls_distance,tls_state)
          
         # Initial guess for control variables: moderate acceleration and throttle
         control_vars = (
-            [vehicle.get_acceleration()] * self.steps_ahead   # Initial acceleration guess
+            [acceleration] * self.steps_ahead   # Initial acceleration guess
         )
 
         # First acceleration step constraint
@@ -74,7 +84,7 @@ class MPCController:
         
         # Check optimization result
         optimized_acceleration = result.x[0]  # First optimized acceleration value
-        optimized_velocity = vehicle.get_speed() + optimized_acceleration * self.dt
+        optimized_velocity = speed + optimized_acceleration * self.dt
         fuel_consumption = calculate_fuel(optimized_velocity, optimized_acceleration, self.fuel_parameters, self.dt)
 
         return fuel_consumption , optimized_acceleration
