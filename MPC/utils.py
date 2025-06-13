@@ -54,7 +54,7 @@ def calculate_fuel(velocity, acceleration, fuel_parameters, time_step):
 
 def read_config_files():
     config = configparser.ConfigParser()
-    config.read("./MPC/mpc_config.ini")
+    config.read("./mpc_config.ini")
     mpc_parameters = {
         "horizon": int(config["mpc_parameters"]["horizon"]),
         "delta_acc_max": float(config["mpc_parameters"]["delta_acc_max"]),
@@ -68,7 +68,7 @@ def read_config_files():
     }
 
     config = configparser.ConfigParser()
-    config.read("./MPC/fuel_config.ini")
+    config.read("./fuel_config.ini")
     fuel_parameters = {
     "mass": float(config["fuel_parameters"]["mass"]),
     "rolling_coefficient": float(config["fuel_parameters"]["rolling_coefficient"]),
@@ -163,9 +163,9 @@ def save_graph_separated(time_values, original_throttle_values, predicted_thrott
     print(f"Graph saved as: {save_path}")
 
 
-def save_predictions_to_csv(time_values, original_acc_values, predicted_acc_values, original_fuel_values,predicted_fuel_values, vehicle, filename):
+def save_predictions_to_csv(time_values, original_acc_values, predicted_acc_values, original_fuel_values,predicted_fuel_values,original_speed_values ,original_distance_values, filename):
     # Create the outputs folder if it doesn't exist
-    output_directory = "./MPC/outputs"
+    output_directory = "./outputs"
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
         print(f"Created directory: {output_directory}")
@@ -173,8 +173,8 @@ def save_predictions_to_csv(time_values, original_acc_values, predicted_acc_valu
     # Create a DataFrame with the time and throttle values
     data = {
         "Time (s)": time_values,
-        "Distance": vehicle["Distance (m)"].tolist(),
-        "Velocity": vehicle["Speed (m/s)"].tolist(),
+        "Distance": original_distance_values,
+        "Velocity": original_speed_values,
         "Original Acc": original_acc_values,
         "Predicted Acc": predicted_acc_values,
         "Original Fuel": original_fuel_values,
